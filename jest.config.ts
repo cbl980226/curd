@@ -1,5 +1,5 @@
 /* eslint-disable */
-export default {
+module.exports = {
   displayName: 'curd',
   preset: './jest.preset.js',
   testEnvironment: 'node',
