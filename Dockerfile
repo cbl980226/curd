@@ -15,10 +15,11 @@ RUN addgroup --system curd && \
           adduser --system -G curd curd
 
 COPY dist/curd curd
+COPY patches curd/patches
 RUN chown -R curd:curd .
 
 # You can remove this install step if you build with `--bundle` option.
 # The bundled output will include external dependencies.
-RUN npm --prefix curd --omit=dev -f install
+RUN cd curd && corepack pnpm install
 
-CMD [ "node", "curd" ]
+CMD [ "node", "curd/main.js" ]
