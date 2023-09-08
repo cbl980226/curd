@@ -12,6 +12,7 @@ export const postsRouter = t.router({
         method: 'GET',
         path: '/posts',
         tags: ['posts'],
+        protect: true,
         summary: 'Read all posts'
       }
     })
@@ -61,6 +62,7 @@ export const postsRouter = t.router({
         method: 'GET',
         path: '/posts/{id}',
         tags: ['posts'],
+        protect: true,
         summary: 'Read a post by id'
       }
     })

@@ -11,6 +11,7 @@ export const usersRouter = t.router({
         method: 'GET',
         path: '/users',
         tags: ['users'],
+        protect: true,
         summary: 'Read all users'
       }
     })
@@ -41,6 +42,7 @@ export const usersRouter = t.router({
         method: 'GET',
         path: '/users/{id}',
         tags: ['users'],
+        protect: true,
         summary: 'Read a user by id'
       }
     })
