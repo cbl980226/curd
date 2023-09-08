@@ -1,0 +1,16 @@
+diff --git a/src/utils/typescript/run-type-check.js b/src/utils/typescript/run-type-check.js
+index 306f62d31c6a821521b12bd1249e7d23a6240c98..f9410f3d0306ff704f838462d0c350e4bb0ee73e 100644
+--- a/src/utils/typescript/run-type-check.js
++++ b/src/utils/typescript/run-type-check.js
+@@ -73,9 +73,11 @@ function setupTypeScript(options) {
+ function getTypeCheckResult(ts, allDiagnostics, workspaceRoot, inputFilesCount, totalFilesCount, incremental = false) {
+     const errors = allDiagnostics
+         .filter((d) => d.category === ts.DiagnosticCategory.Error)
++        .filter((d) => !d.file.fileName.includes("node_modules"))
+         .map((d) => getFormattedDiagnostic(ts, workspaceRoot, d));
+     const warnings = allDiagnostics
+         .filter((d) => d.category === ts.DiagnosticCategory.Warning)
++        .filter((d) => !d.file.fileName.includes("node_modules"))
+         .map((d) => getFormattedDiagnostic(ts, workspaceRoot, d));
+     return {
+         warnings,
