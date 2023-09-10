@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import { t, protectedAdminProcedure } from '@/trpc/trpc'
-import { database } from '@/database/index'
 import { TRPCError } from '@trpc/server'
-import { ROLE } from '@/constants/role'
+import db from '@/db'
+import { ROLE } from '@prisma/client'
 
 export const usersRouter = t.router({
   getUsers: protectedAdminProcedure
@@ -27,12 +27,8 @@ export const usersRouter = t.router({
         )
       })
     )
-    .query(() => {
-      const users = database.users.map(user => ({
-        id: user.id,
-        email: user.email,
-        name: user.name
-      }))
+    .query(async () => {
+      const users = await db.user.findMany()
 
       return { users }
     }),
@@ -61,8 +57,12 @@ export const usersRouter = t.router({
         })
       })
     )
-    .query(({ input }) => {
-      const user = database.users.find(_user => _user.id === input.id)
+    .query(async ({ input }) => {
+      const user = await db.user.findUnique({
+        where: {
+          id: input.id
+        }
+      })
 
       if (!user) {
         throw new TRPCError({

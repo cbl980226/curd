@@ -3,9 +3,8 @@ import { type inferAsyncReturnType, initTRPC, TRPCError } from '@trpc/server'
 import { type OpenApiMeta } from 'trpc-openapi'
 import { nanoid } from 'nanoid'
 import jwt from 'jsonwebtoken'
-
-import { type User, database } from '@/database/index'
-import { ROLE } from '@/constants/role'
+import { ROLE, type User } from '@prisma/client'
+import db from '@/db'
 
 // create context for each request
 export const createContext = async ({ req, res }: CreateExpressContextOptions) => {
@@ -18,9 +17,13 @@ export const createContext = async ({ req, res }: CreateExpressContextOptions) =
     if (req.headers['authorization']) {
       const token = req.headers['authorization'].split(' ')[1]
       if (token) {
-        const userId = jwt.verify(token, process.env.JWT_SECRET)
+        const userId = jwt.verify(token, process.env.JWT_SECRET) as string
         if (userId) {
-          user = database.users.find(_user => _user.id === userId) ?? null
+          user = await db.user.findUnique({
+            where: {
+              id: userId
+            }
+          })
           delete user.password
         }
       }

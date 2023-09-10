@@ -2,8 +2,8 @@ import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
 import { nanoid } from 'nanoid'
 import { t, protectedProcedure } from '@/trpc/trpc'
-import { database, type Post } from '@/database/index'
-import { ROLE } from '@/constants/role'
+import { ROLE, type Post } from '@prisma/client'
+import db from '@/db'
 
 export const postsRouter = t.router({
   getPosts: protectedProcedure
@@ -18,7 +18,7 @@ export const postsRouter = t.router({
     })
     .input(
       z.object({
-        userId: z.string().optional()
+        authorId: z.string().optional()
       })
     )
     .output(
@@ -26,19 +26,21 @@ export const postsRouter = t.router({
         posts: z.array(
           z.object({
             id: z.string(),
+            title: z.string(),
             content: z.string(),
-            userId: z.string()
+            published: z.boolean(),
+            authorId: z.string()
           })
         )
       })
     )
-    .query(({ input, ctx }) => {
-      let posts: Post[] = database.posts
+    .query(async ({ input, ctx }) => {
+      let posts: Post[] = await db.post.findMany()
 
-      if (input.userId) {
-        if (ctx.user.role === ROLE.ADMIN) {
+      if (input.authorId) {
+        if (ctx.user.id === input.authorId || ctx.user.role === ROLE.ADMIN) {
           posts = posts.filter(post => {
-            return post.userId === input.userId
+            return post.authorId === input.authorId
           })
         } else {
           throw new TRPCError({
@@ -49,7 +51,7 @@ export const postsRouter = t.router({
       } else {
         if (ctx.user.role !== ROLE.ADMIN) {
           posts = posts.filter(post => {
-            return post.userId === ctx.user.id
+            return post.authorId === ctx.user.id
           })
         }
       }
@@ -75,13 +77,19 @@ export const postsRouter = t.router({
       z.object({
         post: z.object({
           id: z.string(),
+          title: z.string(),
           content: z.string(),
-          userId: z.string()
+          published: z.boolean(),
+          authorId: z.string()
         })
       })
     )
-    .query(({ input, ctx }) => {
-      const post = database.posts.find(_post => _post.id === input.id)
+    .query(async ({ input, ctx }) => {
+      const post = await db.post.findUnique({
+        where: {
+          id: input.id
+        }
+      })
 
       if (!post) {
         throw new TRPCError({
@@ -89,7 +97,7 @@ export const postsRouter = t.router({
           code: 'NOT_FOUND'
         })
       }
-      if (post.userId !== ctx.user.id && ctx.user.role !== ROLE.ADMIN) {
+      if (post.authorId !== ctx.user.id && ctx.user.role !== ROLE.ADMIN) {
         throw new TRPCError({
           message: 'Cannot get post owned by other user',
           code: 'FORBIDDEN'
@@ -110,26 +118,30 @@ export const postsRouter = t.router({
     })
     .input(
       z.object({
-        content: z.string().min(1).max(140)
+        title: z.string().min(1).max(50),
+        content: z.string().max(140).optional()
       })
     )
     .output(
       z.object({
         post: z.object({
           id: z.string(),
+          title: z.string(),
           content: z.string(),
-          userId: z.string()
+          published: z.boolean(),
+          authorId: z.string()
         })
       })
     )
-    .mutation(({ input, ctx }) => {
-      const post: Post = {
-        id: nanoid(),
-        content: input.content,
-        userId: ctx.user.id
-      }
-
-      database.posts.push(post)
+    .mutation(async ({ input, ctx }) => {
+      const post = await db.post.create({
+        data: {
+          id: nanoid(),
+          title: input.title,
+          content: input.content,
+          authorId: ctx.user.id
+        }
+      })
 
       return { post }
     }),
@@ -146,20 +158,26 @@ export const postsRouter = t.router({
     .input(
       z.object({
         id: z.string(),
-        content: z.string().min(1)
+        content: z.string().max(140).optional()
       })
     )
     .output(
       z.object({
         post: z.object({
           id: z.string(),
+          title: z.string(),
           content: z.string(),
-          userId: z.string()
+          published: z.boolean(),
+          authorId: z.string()
         })
       })
     )
-    .mutation(({ input, ctx }) => {
-      const post = database.posts.find(_post => _post.id === input.id)
+    .mutation(async ({ input, ctx }) => {
+      const post = await db.post.findUnique({
+        where: {
+          id: input.id
+        }
+      })
 
       if (!post) {
         throw new TRPCError({
@@ -167,16 +185,23 @@ export const postsRouter = t.router({
           code: 'NOT_FOUND'
         })
       }
-      if (post.userId !== ctx.user.id && ctx.user.role !== ROLE.ADMIN) {
+      if (post.authorId !== ctx.user.id && ctx.user.role !== ROLE.ADMIN) {
         throw new TRPCError({
           message: 'Cannot edit post owned by other user',
           code: 'FORBIDDEN'
         })
       }
 
-      post.content = input.content
+      const updatedPost = await db.post.update({
+        where: {
+          id: input.id
+        },
+        data: {
+          content: input.content
+        }
+      })
 
-      return { post }
+      return { post: updatedPost }
     }),
   deletePostById: protectedProcedure
     .meta({
@@ -193,9 +218,23 @@ export const postsRouter = t.router({
         id: z.string()
       })
     )
-    .output(z.boolean())
-    .mutation(({ input, ctx }) => {
-      const post = database.posts.find(_post => _post.id === input.id)
+    .output(
+      z.object({
+        post: z.object({
+          id: z.string(),
+          title: z.string(),
+          content: z.string(),
+          published: z.boolean(),
+          authorId: z.string()
+        })
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const post = await db.post.findUnique({
+        where: {
+          id: input.id
+        }
+      })
 
       if (!post) {
         throw new TRPCError({
@@ -203,15 +242,19 @@ export const postsRouter = t.router({
           code: 'NOT_FOUND'
         })
       }
-      if (post.userId !== ctx.user.id && ctx.user.role !== ROLE.ADMIN) {
+      if (post.authorId !== ctx.user.id && ctx.user.role !== ROLE.ADMIN) {
         throw new TRPCError({
           message: 'Cannot delete post owned by other user',
           code: 'FORBIDDEN'
         })
       }
 
-      database.posts = database.posts.filter(_post => _post !== post)
+      const deletedPost = await db.post.delete({
+        where: {
+          id: input.id
+        }
+      })
 
-      return true
+      return { post: deletedPost }
     })
 })

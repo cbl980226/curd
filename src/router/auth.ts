@@ -4,8 +4,8 @@ import { nanoid } from 'nanoid'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { t, publicProcedure } from '@/trpc/trpc'
-import { database } from '@/database/index'
-import { ROLE } from '@/constants/role'
+import { ROLE } from '@prisma/client'
+import db from '@/db'
 
 export const authRouter = t.router({
   register: publicProcedure
@@ -42,7 +42,11 @@ export const authRouter = t.router({
       })
     )
     .mutation(async ({ input }) => {
-      let user = database.users.find(_user => _user.email === input.email)
+      const user = await db.user.findUnique({
+        where: {
+          email: input.email
+        }
+      })
 
       if (user) {
         throw new TRPCError({
@@ -53,19 +57,19 @@ export const authRouter = t.router({
 
       try {
         const hash = await bcrypt.hash(input.password, 10)
-        user = {
-          id: nanoid(),
-          name: input.name,
-          email: input.email,
-          password: hash,
-          role: input.role || ROLE.NORMAL
-        }
-        database.users.push(user)
+        const newUser = await db.user.create({
+          data: {
+            id: nanoid(),
+            name: input.name,
+            email: input.email,
+            password: hash
+          }
+        })
+        delete newUser.password
+        return { user: { ...newUser } }
       } catch (error) {
         console.error(error)
       }
-
-      return { user: { id: user.id, email: user.email, name: user.name, role: user.role } }
     }),
   login: publicProcedure
     .meta({
@@ -88,7 +92,11 @@ export const authRouter = t.router({
       })
     )
     .mutation(async ({ input }) => {
-      const user = database.users.find(_user => _user.email === input.email)
+      const user = await db.user.findUnique({
+        where: {
+          email: input.email
+        }
+      })
 
       if (!user) {
         throw new TRPCError({
