@@ -24,7 +24,7 @@ export const authRouter = t.router({
           email: z.string().email(),
           password: z.string().min(4),
           confirmPassword: z.string(),
-          role: z.enum([ROLE.ADMIN, ROLE.NORMAL, ROLE.BANNED]).default(ROLE.NORMAL)
+          role: z.enum([ROLE.ADMIN, ROLE.NORMAL]).default(ROLE.NORMAL)
         })
         .refine(data => data.password === data.confirmPassword, {
           message: "Passwords don't match",
@@ -37,7 +37,7 @@ export const authRouter = t.router({
           id: z.string(),
           name: z.string().min(3),
           email: z.string().email(),
-          role: z.enum([ROLE.ADMIN, ROLE.NORMAL, ROLE.BANNED])
+          role: z.enum([ROLE.ADMIN, ROLE.NORMAL])
         })
       })
     )

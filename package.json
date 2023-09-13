@@ -8,7 +8,11 @@
     "release": "standard-version",
     "start": "nx serve",
     "build": "nx build",
-    "test": "nx test"
+    "test": "nx test",
+    "test:docker:down": "docker-compose -f docker-compose.test.yml down",
+    "test:docker:up": "docker-compose -f docker-compose.test.yml --env-file .env.test up -d",
+    "test:start": "env-cmd -f .env.test nx serve --configuration=production",
+    "e2e": "pnpm test:docker:up && env-cmd -f .env.test pnpm prisma migrate deploy && nx run e2e:e2e"
   },
   "private": true,
   "dependencies": {
@@ -44,6 +48,7 @@
     "@typescript-eslint/parser": "5.60.1",
     "commitizen": "^4.3.0",
     "cz-git": "^1.7.1",
+    "env-cmd": "^10.1.0",
     "esbuild": "^0.17.17",
     "eslint": "8.46.0",
     "eslint-config-prettier": "8.1.0",

@@ -5,6 +5,16 @@ import { t, protectedProcedure } from '@/trpc/trpc'
 import { ROLE, type Post } from '@prisma/client'
 import db from '@/db'
 
+const postZodObject = z.object({
+  id: z.string(),
+  title: z.string(),
+  content: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  published: z.boolean(),
+  authorId: z.string()
+})
+
 export const postsRouter = t.router({
   getPosts: protectedProcedure
     .meta({
@@ -23,15 +33,7 @@ export const postsRouter = t.router({
     )
     .output(
       z.object({
-        posts: z.array(
-          z.object({
-            id: z.string(),
-            title: z.string(),
-            content: z.string(),
-            published: z.boolean(),
-            authorId: z.string()
-          })
-        )
+        posts: z.array(postZodObject)
       })
     )
     .query(async ({ input, ctx }) => {
@@ -75,13 +77,7 @@ export const postsRouter = t.router({
     )
     .output(
       z.object({
-        post: z.object({
-          id: z.string(),
-          title: z.string(),
-          content: z.string(),
-          published: z.boolean(),
-          authorId: z.string()
-        })
+        post: postZodObject
       })
     )
     .query(async ({ input, ctx }) => {
@@ -124,13 +120,7 @@ export const postsRouter = t.router({
     )
     .output(
       z.object({
-        post: z.object({
-          id: z.string(),
-          title: z.string(),
-          content: z.string(),
-          published: z.boolean(),
-          authorId: z.string()
-        })
+        post: postZodObject
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -163,13 +153,7 @@ export const postsRouter = t.router({
     )
     .output(
       z.object({
-        post: z.object({
-          id: z.string(),
-          title: z.string(),
-          content: z.string(),
-          published: z.boolean(),
-          authorId: z.string()
-        })
+        post: postZodObject
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -220,13 +204,7 @@ export const postsRouter = t.router({
     )
     .output(
       z.object({
-        post: z.object({
-          id: z.string(),
-          title: z.string(),
-          content: z.string(),
-          published: z.boolean(),
-          authorId: z.string()
-        })
+        post: postZodObject
       })
     )
     .mutation(async ({ input, ctx }) => {

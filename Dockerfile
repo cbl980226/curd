@@ -16,10 +16,13 @@ RUN addgroup --system curd && \
 
 COPY dist/curd curd
 COPY patches curd/patches
+COPY prisma curd/prisma
 RUN chown -R curd:curd .
 
 # You can remove this install step if you build with `--bundle` option.
 # The bundled output will include external dependencies.
 RUN cd curd && corepack pnpm install
+
+RUN cd curd && corepack pnpm prisma generate
 
 CMD [ "node", "curd/main.js" ]

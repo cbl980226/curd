@@ -3,6 +3,15 @@ import { t, protectedAdminProcedure } from '@/trpc/trpc'
 import { TRPCError } from '@trpc/server'
 import db from '@/db'
 import { ROLE } from '@prisma/client'
+import exclude from '@/utils/exclude'
+
+const userZodObject = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  name: z.string(),
+  role: z.enum([ROLE.ADMIN, ROLE.NORMAL]),
+  createdAt: z.date()
+})
 
 export const usersRouter = t.router({
   getUsers: protectedAdminProcedure
@@ -18,19 +27,16 @@ export const usersRouter = t.router({
     .input(z.void())
     .output(
       z.object({
-        users: z.array(
-          z.object({
-            id: z.string(),
-            email: z.string().email(),
-            name: z.string()
-          })
-        )
+        users: z.array(userZodObject)
       })
     )
     .query(async () => {
       const users = await db.user.findMany()
+      const usersWithoutPassword = users.map(user => {
+        return exclude(user, ['password'])
+      })
 
-      return { users }
+      return { users: usersWithoutPassword }
     }),
   getUserById: protectedAdminProcedure
     .meta({
@@ -49,12 +55,7 @@ export const usersRouter = t.router({
     )
     .output(
       z.object({
-        user: z.object({
-          id: z.string(),
-          email: z.string().email(),
-          name: z.string(),
-          role: z.enum([ROLE.ADMIN, ROLE.NORMAL, ROLE.BANNED])
-        })
+        user: userZodObject
       })
     )
     .query(async ({ input }) => {
@@ -71,6 +72,8 @@ export const usersRouter = t.router({
         })
       }
 
-      return { user }
+      const userWithoutPassword = exclude(user, ['password'])
+
+      return { user: userWithoutPassword }
     })
 })

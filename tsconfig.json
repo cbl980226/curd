@@ -17,6 +17,7 @@
       "@/*": ["src/*"]
     },
     "esModuleInterop": true,
+    "isolatedModules": true,
     "verbatimModuleSyntax": true
   },
   "files": [],

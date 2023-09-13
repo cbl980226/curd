@@ -5,7 +5,7 @@ import { expressHandler } from 'trpc-playground/handlers/express'
 import swaggerUi from 'swagger-ui-express'
 import { createContext } from '@/trpc/trpc'
 import { openApiDocument } from '@/trpc/openapi'
-import { appRouter } from '@/router/index'
+import { appRouter } from '@/router/_app'
 
 const host = process.env.HOST ?? 'localhost'
 const port = process.env.PORT ? Number(process.env.PORT) : 3000
