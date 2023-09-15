@@ -16,6 +16,7 @@
         "main": "src/main.ts",
         "tsConfig": "tsconfig.app.json",
         "assets": ["src/assets"],
+        "generatePackageJson": false,
         "esbuildOptions": {
           "sourcemap": true,
           "outExtension": {
@@ -26,6 +27,7 @@
       "configurations": {
         "development": {},
         "production": {
+          "generateLockfile": false,
           "esbuildOptions": {
             "sourcemap": false,
             "outExtension": {

@@ -4,25 +4,38 @@
 # Tip: Modify "docker-build" options in project.json to change docker build args.
 #
 # Run the container with `docker run -p 3000:3000 -t curd`.
-FROM docker.io/node:lts-alpine
+FROM docker.io/node:lts-alpine AS base
 
 ENV HOST=0.0.0.0
 ENV PORT=3000
 
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
 WORKDIR /app
 
-RUN addgroup --system curd && \
-          adduser --system -G curd curd
+RUN corepack enable
 
-COPY dist/curd curd
+RUN addgroup --system curd && \
+  adduser --system -G curd curd
+
+COPY .npmrc package.json pnpm-lock.yaml curd/
 COPY patches curd/patches
+
+COPY .env curd/.env
 COPY prisma curd/prisma
+COPY scripts curd/scripts
+COPY dist/curd curd/dist
+
 RUN chown -R curd:curd .
 
-# You can remove this install step if you build with `--bundle` option.
-# The bundled output will include external dependencies.
-RUN cd curd && corepack pnpm install
 
-RUN cd curd && corepack pnpm prisma generate
+FROM base AS prod-deps
+WORKDIR /app/curd
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store corepack pnpm install --prod --frozen-lockfile
 
-CMD [ "node", "curd/main.js" ]
+
+FROM base
+COPY --from=prod-deps /app/curd/node_modules /app/curd/node_modules
+EXPOSE 3000
+CMD [ "node", "curd/dist/main.js" ]
