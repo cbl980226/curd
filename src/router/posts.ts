@@ -8,9 +8,10 @@ import db from '@/db'
 const postZodObject = z.object({
   id: z.string(),
   title: z.string(),
-  content: z.string(),
+  content: z.string().optional(),
   createdAt: z.date(),
-  updatedAt: z.date(),
+  updatedAt: z.date().nullish(),
+  deletedAt: z.date().nullish(),
   published: z.boolean(),
   authorId: z.string()
 })
